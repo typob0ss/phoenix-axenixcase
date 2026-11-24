@@ -9,6 +9,7 @@ import { api, download } from './api';
 import { Diagram, exportDiagram } from './Diagram';
 import { Bottlenecks, Recommendations, Report } from './Findings';
 import { Inspector } from './Inspector';
+import { ResultNotes } from './ResultNotes';
 import { createOperations, type Operation } from './operations';
 import type { Analysis, Example, Health } from './types';
 import './styles.css';
@@ -291,9 +292,7 @@ function App() {
               </div>
             </div>
 
-            {analysis.warnings.length > 0 && <div className="notice caution result-warning"><CircleAlert size={17} />
-              <div>{analysis.warnings.map((warning, index) => <p key={index}>{warning}</p>)}</div>
-            </div>}
+            <ResultNotes key={`${analysisRun}-${analysis.edited}`} analysis={analysis} />
 
             <nav className="section-tabs" aria-label="Результаты анализа">
               {sections.map(({ id, label, Icon }) => (
