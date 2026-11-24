@@ -184,7 +184,7 @@ h3 { font-size: 17px; line-height: 1.4; letter-spacing: -.015em; font-weight: 60
 .tag.step-manual_input { color: #9bd4c7; background: #273b35; }
 .step-metadata { display: grid; gap: 12px; padding: 15px 0; border-block: 1px solid var(--border); }
 .step-metadata > div { display: grid; align-items: center; grid-template-columns: auto 1fr auto; gap: 7px; color: var(--muted); font-size: 11px; }
-.step-metadata strong { color: var(--ink); white-space: nowrap; font-weight: 500; }
+.step-metadata strong { color: var(--ink); white-space: normal; max-width: 170px; text-align: right; font-weight: 500; }
 .small-note { font-size: 12px; line-height: 1.65; color: var(--muted); margin-top: 9px; }
 .step-resources { margin-top: 15px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .step-resources b { color: var(--ink); margin-right: 4px; }
@@ -230,6 +230,10 @@ summary::-webkit-details-marker { display: none; }
 .finding-metrics > div { padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
 .finding-metrics dt { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .finding-metrics dd { margin: 0; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.measurement-next { padding-top: 3px; }
+.measurement-next h4 { margin: 0 0 7px; font-size: 13px; font-weight: 500; }
+.measurement-next ul { margin: 0; padding-left: 18px; color: var(--muted-dark); font-size: 12px; line-height: 1.7; }
+.measurement-next li + li { margin-top: 6px; }
 .finding-effect b { display: block; margin-bottom: 4px; color: var(--ink); }
 .saving { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; background: var(--success-bg); color: var(--success); font-size: 12px; line-height: 1.6; }
 .saving svg { flex-shrink: 0; }
@@ -347,3 +351,5 @@ summary::-webkit-details-marker { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+.saving.pending { background: var(--surface-raised); color: var(--muted-dark); }

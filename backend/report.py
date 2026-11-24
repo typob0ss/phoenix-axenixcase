@@ -22,8 +22,8 @@ def markdown_text(value: str, limit: int) -> str:
     return re.sub(r"([\\`*_{\[\]#|])", r"\\\1", html.escape(value, quote=False))
 
 
-def format_metric(value: float | None, unit: str) -> str:
-    return "нет данных" if value is None else f"{value:g} {unit}"
+def format_metric(value: float | None, unit: str, missing: str = "нет подтверждённого замера в интервью") -> str:
+    return missing if value is None else f"{value:g} {unit}"
 
 
 def render_report(analysis: Analysis) -> str:
@@ -60,9 +60,16 @@ def render_report(analysis: Analysis) -> str:
             "",
             f"  > {markdown_text(loss.quote, 22)}",
             "",
-            f"  Время — {format_metric(loss.time_minutes, 'мин')} · Стоимость — {format_metric(loss.cost_rub, '₽')}.  ",
+            f"  Потери времени — {format_metric(loss.time_minutes, 'мин', 'по интервью нельзя точно рассчитать')}.  ",
+            f"  Стоимость потерь — {format_metric(loss.cost_rub, '₽', 'для расчёта не хватает исходных данных')}.  ",
             f"  {markdown_text(loss.metric_basis, 12)}",
         ])
+        if loss.time_minutes is None or loss.cost_rub is None:
+            lines.append("  **Что уточнить для расчёта:**")
+            if loss.time_minutes is None:
+                lines.append("  Сколько минут теряется и сколько раз возникает проблема?")
+            if loss.cost_rub is None:
+                lines.append("  Какова стоимость часа участников и прямые расходы?")
 
     lines.extend(["", "## Предложения по автоматизации", ""])
     if not analysis.recommendations:
@@ -76,13 +83,15 @@ def render_report(analysis: Analysis) -> str:
         ])
         if item.estimated_saving_minutes is not None:
             lines.append(f"  Измеренная экономия — {format_metric(item.estimated_saving_minutes, 'мин')}.  ")
+        else:
+            lines.append("  Экономия времени требует замера в пилоте: сравните время до и после.  ")
         lines.extend([
             f"  Ожидаемый эффект — {markdown_text(item.effect, 10)}  ",
             f"  Как проверить — {markdown_text(item.calculation, 12)}",
         ])
 
     lines.extend(["", "## Ограничения", "",
-                  "Ожидаемые эффекты проверяются в пилоте. Метрики без подтверждения оставлены пустыми."])
+                  "Ожидаемые эффекты проверяются в пилоте. Длительность операции и приблизительные оценки из интервью сами по себе не показывают размер потерь."])
     warnings = [warning for warning in analysis.warnings if warning != EDIT_WARNING]
     lines.extend(f"- {markdown_text(warning, 16)}" for warning in warnings[:2])
     return "\n".join(lines) + "\n"

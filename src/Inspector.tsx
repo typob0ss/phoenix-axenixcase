@@ -121,7 +121,7 @@ export function Inspector({ analysis, step, onSave }: {
             <p>{analysis.roles.find(role => role.id === step.role_id)?.name}</p>
           </div>
           <div className="step-metadata">
-            <div><Clock3 size={15} /><span>Длительность</span><strong>{step.duration_minutes === null ? 'Нет данных' : `${step.duration_minutes} мин`}</strong></div>
+            <div><Clock3 size={15} /><span>Длительность</span><strong>{step.duration_minutes === null ? 'Нет подтверждённого замера в интервью' : `${step.duration_minutes} мин`}</strong></div>
             <div><ScanLine size={15} /><span>{analysis.mode === 'live' ? 'Оценка модели' : 'Оценка в демоданных'}</span><strong>{Math.round(step.confidence * 100)}%</strong></div>
           </div>
           {analysis.mode === 'live' && <p className="small-note">Модель оценивает уверенность в своём выводе. Сервер проверяет, что цитата есть в тексте. Связь цитаты с выводом оценивает читатель.</p>}

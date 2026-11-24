@@ -91,7 +91,7 @@ def render_pdf_report(analysis: Analysis) -> bytes:
         top = start - index * 84
         cursor = paragraph(f'{index + 1}. {loss.title}', top, size=10.5, limit=2, leading=13)
         cursor = paragraph(f'Причина: {loss.cause}', cursor - 1, limit=1)
-        cursor = paragraph(f'Время: {format_metric(loss.time_minutes, "мин")}  ·  Стоимость: {format_metric(loss.cost_rub, "₽")}', cursor, muted=True)
+        cursor = paragraph(f'Потери времени: {format_metric(loss.time_minutes, "мин", "нужен точный замер")}  ·  Стоимость: {format_metric(loss.cost_rub, "₽", "нужны исходные данные")}', cursor, muted=True)
         paragraph(f'Цитата: {loss.quote}', cursor, size=8.5, limit=2, leading=11, muted=True)
         rule(top - 76)
     y = start - 3 * 84 - 4
@@ -105,14 +105,15 @@ def render_pdf_report(analysis: Analysis) -> bytes:
         cursor = paragraph(f'{index + 1}. {item.title}', top, size=10.5, limit=2, leading=13)
         cursor = paragraph(f'Эффект: {item.effect}', cursor - 1, limit=1)
         cursor = paragraph(f'Приоритет: {item.priority}  ·  Сложность: {LEVELS[item.complexity]}  ·  Риск: {RISKS[item.risk]}', cursor, muted=True)
-        paragraph(f'Цитата: {item.quote}', cursor, size=8.5, limit=2, leading=11, muted=True)
+        cursor = paragraph(f'Экономия: {format_metric(item.estimated_saving_minutes, "мин", "требует замера в пилоте")}', cursor, muted=True)
+        paragraph(f'Цитата: {item.quote}', cursor, size=8.5, limit=1, leading=11, muted=True)
         rule(top - 76)
 
     if analysis.edited:
         paragraph('Перепроверьте выводы и расчёты после ручных изменений.', 90, limit=2, muted=True)
     elif analysis.warnings:
         paragraph('Ограничение: ' + analysis.warnings[0], 90, limit=2, muted=True)
-    paragraph('Эффекты — гипотезы для пилота. Нет данных означает отсутствие подтверждённого замера.', 58, size=8.5, muted=True)
+    paragraph('Уточнить: время потерь, частоту и стоимость часа. Эффекты проверить в пилоте.', 58, size=8.5, muted=True)
     paragraph('Цитаты сокращены. Подробный отчёт — в Markdown, полные данные — в JSON.', 45, size=8.5, muted=True)
     pdf.showPage()
     pdf.save()

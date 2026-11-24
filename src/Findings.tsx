@@ -7,12 +7,12 @@ import type { Analysis } from './types';
 const number = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
 const level = { low: 'Низкая', medium: 'Средняя', high: 'Высокая' };
 const riskLevel = { low: 'Низкий', medium: 'Средний', high: 'Высокий' };
-const measured = (value: number | null, unit: string) => value === null ? 'Нет данных' : `${number.format(value)} ${unit}`;
+const measured = (value: number | null, unit: string, missing: string) => value === null ? missing : `${number.format(value)} ${unit}`;
 
 export function Bottlenecks({ analysis, onOpenStep }: { analysis: Analysis; onOpenStep: (id: string) => void }) {
   return (
     <section className="findings">
-      <div className="section-heading"><h2>Узкие места</h2><p>Где участники процесса теряют время или выполняют лишнюю работу.</p></div>
+      <div className="section-heading"><h2>Узкие места</h2><p>Где участники процесса теряют время или выполняют лишнюю работу. Длительность операции и приблизительные оценки из интервью сами по себе не показывают размер потерь.</p></div>
       {analysis.bottlenecks.length === 0 && <div className="card empty-state">В исходном тексте недостаточно подтверждений, чтобы выделить узкие места.</div>}
       <div className="findings-grid">
         {analysis.bottlenecks.map(item => (
@@ -23,10 +23,17 @@ export function Bottlenecks({ analysis, onOpenStep }: { analysis: Analysis; onOp
             <p>{item.cause}</p>
             <blockquote><Quote size={14} /> {item.quote}</blockquote>
             <dl className="finding-metrics">
-              <div><dt>Потери времени</dt><dd>{measured(item.time_minutes, 'мин')}</dd></div>
-              <div><dt>Стоимость</dt><dd>{measured(item.cost_rub, '₽')}</dd></div>
+              <div><dt>Потери времени</dt><dd>{measured(item.time_minutes, 'мин', 'По интервью нельзя точно рассчитать')}</dd></div>
+              <div><dt>Стоимость потерь</dt><dd>{measured(item.cost_rub, '₽', 'Для расчёта не хватает исходных данных')}</dd></div>
             </dl>
             {item.metric_basis && <p className="small-note">{item.metric_basis}</p>}
+            {(item.time_minutes === null || item.cost_rub === null) && <div className="measurement-next">
+              <h4>Что уточнить для расчёта</h4>
+              <ul>
+                {item.time_minutes === null && <li>Сколько минут занимает лишняя работа или ожидание и сколько раз возникает эта проблема?</li>}
+                {item.cost_rub === null && <li>Какова стоимость часа участников и есть ли прямые расходы из-за этой проблемы?</li>}
+              </ul>
+            </div>}
             <div className="step-links">
               {item.step_ids.map(id => <button key={id} className="text-button" onClick={() => onOpenStep(id)}>
                 {analysis.steps.find(step => step.id === id)?.title ?? id} <ArrowRight size={13} />
@@ -56,7 +63,8 @@ export function Recommendations({ analysis }: { analysis: Analysis }) {
               <div><dt><Gauge size={14} /> Сложность</dt><dd>{level[item.complexity]}</dd></div>
               <div><dt>Риск</dt><dd>{riskLevel[item.risk]}</dd></div>
             </dl>
-            <div className="saving"><Clock3 size={16} /><div><strong>Оценка экономии времени</strong><span>{measured(item.estimated_saving_minutes, 'мин')}</span></div></div>
+            <div className={`saving${item.estimated_saving_minutes === null ? ' pending' : ''}`}><Clock3 size={16} /><div><strong>Экономия времени</strong><span>{measured(item.estimated_saving_minutes, 'мин', 'Требует замера в пилоте')}</span></div></div>
+            {item.estimated_saving_minutes === null && <p className="small-note">Сравните время до и после пилота на сопоставимых операциях.</p>}
             {item.calculation && <p className="small-note">{item.calculation}</p>}
             <blockquote><Quote size={14} /> {item.quote}</blockquote>
             {item.bottleneck_ids.length > 0 && <p className="small-note">

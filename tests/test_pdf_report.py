@@ -95,3 +95,28 @@ def test_uploaded_synthetic_sample_keeps_its_label_in_a_live_pdf():
     text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
     assert 'Учебные вымышленные данные' in text
     assert 'внешней моделью' in text
+
+
+def test_missing_metrics_explain_measurement_needs_in_pdf_and_markdown():
+    from backend.report import render_report
+
+    analysis = DEMO_ANALYSES['bank']
+    markdown = render_report(analysis)
+    response = export_pdf(analysis.model_dump())
+    assert response.status_code == 200
+    reader = PdfReader(io.BytesIO(response.content))
+    assert len(reader.pages) == 1
+    pdf_text = reader.pages[0].extract_text()
+    for text in [markdown, pdf_text]:
+        assert 'нет данных' not in text.lower()
+        assert 'замера в пилоте' in text.lower()
+        assert 'стоимость часа' in text.lower()
+    assert 'Что уточнить для расчёта' in markdown
+    assert 'сколько раз' in markdown
+
+
+def test_zero_measurements_are_preserved_instead_of_missing_labels():
+    from backend.report import format_metric
+
+    assert format_metric(0, 'мин') == '0 мин'
+    assert format_metric(0, '₽') == '0 ₽'
