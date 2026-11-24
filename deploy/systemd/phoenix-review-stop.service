@@ -1,0 +1,6 @@
+[Unit]
+Description=Stop only Phoenix review application after review period
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl disable --now phoenix-review.service

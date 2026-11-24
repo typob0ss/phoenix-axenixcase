@@ -1,0 +1,10 @@
+[Unit]
+Description=Limit Phoenix review to approximately one day
+
+[Timer]
+OnActiveSec=24h
+AccuracySec=1min
+Unit=phoenix-review-stop.service
+
+[Install]
+WantedBy=timers.target

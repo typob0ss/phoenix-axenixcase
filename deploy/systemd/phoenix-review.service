@@ -1,0 +1,25 @@
+[Unit]
+Description=Phoenix AXENIX review application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=true
+WorkingDirectory=/opt/phoenix-review/current
+EnvironmentFile=/etc/phoenix-review.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/phoenix-review/.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 18080 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=512M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
