@@ -8,7 +8,7 @@
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements.lock.txt
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
 .venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
@@ -34,10 +34,11 @@ corepack pnpm build
 
 ```bash
 .venv/bin/python -m pytest tests -q
+node --test tests-ui/*.test.mjs
 scripts/pnpm.sh build
 ```
 
-Сценарий демонстрации и проверки: [docs/demo.md](docs/demo.md). Контракт API: [docs/api-contract.md](docs/api-contract.md). Предварительный состав команды: [docs/team.md](docs/team.md).
+Для frontend-тестов нужен Node.js 22.18+ с поддержкой TypeScript type stripping (проверено на Node.js 24). Сценарий демонстрации и проверки: [docs/demo.md](docs/demo.md). Контракт API: [docs/api-contract.md](docs/api-contract.md). Предварительный состав команды: [docs/team.md](docs/team.md).
 
 ## Границы прототипа
 

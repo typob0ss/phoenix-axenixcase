@@ -9,6 +9,6 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test tests-ui/*.test.mjs"
   },
-  "dependencies": {"react":"^19.0.0", "react-dom":"^19.0.0", "lucide-react":"^0.468.0"},
-  "devDependencies": {"@types/react":"^19.0.0", "@types/react-dom":"^19.0.0", "@vitejs/plugin-react":"^4.3.4", "typescript":"~5.7.2", "vite":"^6.0.5"}
+  "dependencies": {"react":"19.3.1", "react-dom":"19.3.1", "lucide-react":"0.468.0"},
+  "devDependencies": {"@types/react":"19.3.0", "@types/react-dom":"19.3.0", "typescript":"5.7.3", "vite":"6.4.6"}
 }

@@ -1,5 +1,7 @@
 node_modules/
+.pnpm-store/
 dist/
+output/
 .venv/
 __pycache__/
 .pytest_cache/
@@ -9,4 +11,5 @@ __pycache__/
 .superpowers/
 .codebase-memory/
 *.log
+*.tsbuildinfo
 .DS_Store

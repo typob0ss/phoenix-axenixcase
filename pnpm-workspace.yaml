@@ -1,0 +1,9 @@
+packages:
+  - .
+storeDir: .pnpm-store
+minimumReleaseAge: 0
+networkConcurrency: 4
+fetchRetries: 3
+fetchTimeout: 120000
+allowBuilds:
+  esbuild: true
