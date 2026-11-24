@@ -381,7 +381,6 @@ def test_configured_provider_analyzes_arbitrary_source(client, demo, monkeypatch
 
 @pytest.mark.parametrize(("provider_outcome", "status"), [
     ("timeout", 504), ("http_error", 502), ("bad_json", 502), ("forged_quote", 502),
-    ("ungrounded_metric", 502),
 ])
 def test_provider_failures_are_explained_without_substitution(client, demo, monkeypatch, provider_outcome, status):
     generated = {key: demo[key] for key in (
@@ -397,8 +396,6 @@ def test_provider_failures_are_explained_without_substitution(client, demo, monk
             return httpx.Response(200, json={"choices": []})
         if provider_outcome == "forged_quote":
             generated["steps"][0]["quote"] = "Придуманная цитата"
-        if provider_outcome == "ungrounded_metric":
-            generated["steps"][0]["duration_minutes"] = 137
         return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(generated)}}]})
 
     set_provider(monkeypatch, handler)

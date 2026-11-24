@@ -8,7 +8,10 @@ import httpx
 from httpx import AsyncClient
 from pydantic import ValidationError
 
-from .models import Analysis, AnalysisContent, INSUFFICIENT_FINDINGS
+from .models import (
+    Analysis, AnalysisContent, INSUFFICIENT_FINDINGS,
+    COST, DURATION, check_metric, ground_quantity,
+)
 
 MAX_RESPONSE_BYTES = 512 * 1024
 
@@ -83,6 +86,63 @@ def restore_quote_case(content: AnalysisContent, source: str) -> bool:
     return restored
 
 
+def remove_unsupported_metrics(content: AnalysisContent, source: str) -> bool:
+    """Omit ungrounded numbers without inventing replacements or changing evidence."""
+    durations = ground_quantity(source, DURATION)
+    costs = ground_quantity(source, COST)
+    removed = False
+    groups = (
+        (content.steps, (("duration_minutes", durations),)),
+        (content.bottlenecks, (("time_minutes", durations), ("cost_rub", costs))),
+        (content.recommendations, (("estimated_saving_minutes", durations),)),
+    )
+    for items, fields in groups:
+        for item in items:
+            for field, quantities in fields:
+                try:
+                    check_metric(getattr(item, field), item.quote, source, quantities, field)
+                except ValueError:
+                    setattr(item, field, None)
+                    removed = True
+    return removed
+
+
+def evidence_feedback(content: AnalysisContent, source: str) -> list[dict]:
+    """Give the model actionable diagnostics; suggestions never bypass validation."""
+    errors = []
+    durations = ground_quantity(source, DURATION)
+    costs = ground_quantity(source, COST)
+    for group in ("steps", "edges", "bottlenecks", "recommendations"):
+        for index, item in enumerate(getattr(content, group)):
+            metric_quote = item.quote
+            if item.quote not in source:
+                issue = {
+                    "loc": [group, index, "quote"], "id": item.id,
+                    "msg": "Цитата не совпадает с исходником. Скопируй точный непрерывный фрагмент.",
+                    "invalid_quote": item.quote,
+                }
+                # A frequent formatting mistake is a model-added sentence terminator.
+                candidate = item.quote[:-1] if item.quote[-1:] in (".", "!", "?") else ""
+                if candidate and source.count(candidate) == 1:
+                    issue["verbatim_source_quote"] = candidate
+                    metric_quote = candidate
+                errors.append(issue)
+            for field, quantities in (
+                ("duration_minutes", durations), ("time_minutes", durations),
+                ("cost_rub", costs), ("estimated_saving_minutes", durations),
+            ):
+                if not hasattr(item, field):
+                    continue
+                try:
+                    check_metric(getattr(item, field), metric_quote, source, quantities, field)
+                except ValueError:
+                    errors.append({
+                        "loc": [group, index, field], "id": item.id,
+                        "msg": "Число не подтверждено точным замером в quote. Установи null.",
+                    })
+    return errors[:12]
+
+
 async def request_completion(client: AsyncClient, configuration: Settings, messages: list[dict[str, str]]) -> bytearray:
     async with client.stream(
         "POST", f"{configuration.base_url}/chat/completions",
@@ -115,6 +175,7 @@ async def complete(text: str, configuration: Settings) -> Analysis:
                 for attempt in range(2):
                     raw = await request_completion(client, configuration, messages)
                     content = None
+                    result = None
                     try:
                         content = json.loads(raw)["choices"][0]["message"]["content"]
                         if not isinstance(content, str):
@@ -135,16 +196,35 @@ async def complete(text: str, configuration: Settings) -> Analysis:
                         )
                     except (TypeError, ValueError, KeyError, IndexError, RecursionError) as error:
                         if attempt:
+                            if result is not None and remove_unsupported_metrics(result, text):
+                                result_data = result.model_dump()
+                                result_data["warnings"] = [
+                                    "Численные оценки без подтверждения точной цитатой убраны. "
+                                    "Время, стоимость и экономию необходимо уточнить по исходным данным.",
+                                    *warnings,
+                                ][:24]
+                                try:
+                                    return Analysis(
+                                        **result_data, schema_version="1.0", source_text=text,
+                                        mode="live", demo_id=None, edited=False,
+                                    )
+                                except ValidationError:
+                                    # Omitting numbers never bypasses quotes, references or other rules.
+                                    pass
                             raise ProviderError(
                                 502, "Модель вернула непроверяемый результат. Повторите анализ или уточните стенограмму."
                             ) from None
                         errors = error.errors(include_input=False, include_context=False, include_url=False)[:6] if isinstance(error, ValidationError) else [{"msg": "Неверный формат JSON-ответа."}]
+                        if result is not None:
+                            errors = evidence_feedback(result, text) or errors
                         if isinstance(content, str):
                             messages.append({"role": "assistant", "content": content})
                         messages.append({"role": "user", "content": (
                             "Серверная проверка не приняла ответ. Исправь ошибки и верни полный JSON по исходной схеме. "
                             "Цитаты копируй дословно из source_text. Если число с единицей не содержится именно в quote "
                             "этого объекта, поставь соответствующей метрике null. Не добавляй неподтверждённые выводы. "
+                            "Проверь все перечисленные элементы, включая повторения той же цитаты в других разделах. "
+                            "verbatim_source_quote — точный фрагмент исходника для замены неверной цитаты. "
                             "Диагностика проверки: " + json.dumps(errors, ensure_ascii=False)
                         )})
     except (TimeoutError, httpx.TimeoutException):
