@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.staticfiles import StaticFiles
 
@@ -12,6 +12,7 @@ from .demos import DEMO_ANALYSES, EXAMPLES
 from .imports import ImportBodyLimit, import_text
 from .models import Analysis, AnalyzeRequest, EDIT_WARNING, Example
 from .report import render_report
+from .pdf_report import render_pdf_report
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
@@ -86,6 +87,15 @@ async def validate(analysis: Analysis):
 async def report(analysis: Analysis):
     check_demo_source(analysis)
     return {"markdown": render_report(analysis)}
+
+
+@app.post("/api/report/pdf", response_class=Response)
+def report_pdf(analysis: Analysis):
+    check_demo_source(analysis)
+    return Response(
+        content=render_pdf_report(analysis), media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="phoenix-report.pdf"'},
+    )
 
 
 @app.api_route(

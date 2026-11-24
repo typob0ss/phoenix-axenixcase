@@ -19,5 +19,6 @@ type Example = {id:string; title:string; sector:string; description:string; text
 - `POST /import` multipart field `file` → `{text:string, filename:string}`. Supports TXT UTF-8/UTF-8-BOM and DOCX.
 - `POST /validate` body Analysis → validated Analysis, server sets `edited:true` and adds warning about reviewing dependent findings. Validate citations and graph references, reject forged facts. Frontend uses this on save.
 - `POST /report` body Analysis → `{markdown:string}` (validate current edited data, concise report with quotes).
+- `POST /report/pdf` body Analysis → binary `application/pdf`, attachment `phoenix-report.pdf`. One A4 summary with up to three grounded losses and three automation priorities; long content is excerpted. Detailed report remains in Markdown; JSON preserves complete evidence. Uses the same source and quote validation as other exports.
 
 SVG is produced on frontend from actual current graph. JSON uses current Analysis, no separate API. Vite proxies /api to localhost:8000; production frontend served by FastAPI if dist exists.

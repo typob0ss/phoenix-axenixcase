@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-24",
+  "origin": "OpenAI image_gen; asset extracted from user-approved concept in this chat",
+  "reference": "exec-97496ff9-82a3-4d2f-8302-826fcf2b9e3c.png",
+  "source": "exec-45cd12da-87b0-4b13-9b7b-608e7098707c.png",
+  "prompt": "Extract and recreate ONLY the large flowing red-coral phoenix artwork from the upper-right of this approved web app mockup as a clean separate transparent PNG illustration asset. Preserve the distinctive bird's left-facing head, elegant neck, body and long sweeping upswept ribbon wings and trailing red silk-like flame ribbons, the same coral vermilion shading and smooth translucent material. Complete any bird contours hidden by the app card. Wide landscape composition, isolated bird fills frame with breathing space. Actual transparent background, no charcoal, no UI, no lettering, no panel, no button, no small logo, no glows, no drop shadow. Match the reference artwork faithfully, this is an asset extraction for the approved design.",
+  "transparent_background": true,
+  "approved_direction": true,
+  "outputs": [
+    "public/phoenix.webp",
+    "public/phoenix-850.webp"
+  ],
+  "conversion": "Resized with Lanczos and encoded as WebP quality 90; alpha preserved."
+}

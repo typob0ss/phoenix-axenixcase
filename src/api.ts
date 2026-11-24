@@ -43,13 +43,35 @@ export const api = {
   },
   validate: (analysis: Analysis) => post<Analysis>('/validate', analysis),
   report: (analysis: Analysis) => post<{ markdown: string }>('/report', analysis),
+  async reportPdf(analysis: Analysis): Promise<Blob> {
+    let response: Response;
+    try {
+      response = await fetch('/api/report/pdf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(analysis),
+      });
+    } catch {
+      throw new Error('Нет связи с сервером. Проверьте соединение и повторите попытку.');
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(errorDetail(body?.detail, response.status));
+    }
+    if (!response.headers.get('content-type')?.includes('application/pdf')) {
+      throw new Error('Сервер вернул ответ в неожиданном формате. Повторите загрузку PDF.');
+    }
+    return response.blob();
+  },
 };
 
 export function download(contents: string, extension: string, contentType: string) {
-  const url = URL.createObjectURL(new Blob([contents], { type: contentType }));
+  downloadBlob(new Blob([contents], { type: contentType }), `axenix-process.${extension}`);
+}
+
+export function downloadBlob(contents: Blob, filename: string) {
+  const url = URL.createObjectURL(contents);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `axenix-process.${extension}`;
+  link.download = filename;
   document.body.append(link);
   link.click();
   link.remove();

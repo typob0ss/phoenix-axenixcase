@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, CircleAlert, Clock3, Download, FileText, Gauge, Lightbulb, Quote } from 'lucide-react';
-import { api, download } from './api';
+import { api, download, downloadBlob } from './api';
 import { decodeReportText } from './report';
 import type { Analysis } from './types';
 
@@ -73,6 +73,21 @@ export function Report({ analysis }: { analysis: Analysis }) {
   const [markdown, setMarkdown] = useState('');
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+
+  async function exportPdf() {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    setPdfError('');
+    try {
+      downloadBlob(await api.reportPdf(analysis), 'phoenix-report.pdf');
+    } catch (reason) {
+      setPdfError((reason as Error).message);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
 
   useEffect(() => {
     let current = true;
@@ -90,11 +105,18 @@ export function Report({ analysis }: { analysis: Analysis }) {
     <section className="card report">
       <div className="report-top">
         <div className="finding-icon report-icon"><FileText size={20} /></div>
-        <div><h2>Отчёт о процессе</h2><p>Краткие выводы, подтверждающие цитаты и ограничения расчётов.</p></div>
+        <div><h2>Отчёт о процессе</h2><p>Краткий PDF на одну страницу и подробный разбор в Markdown.</p></div>
+        <div className="report-actions">
+        <button className="button primary" disabled={exportingPdf} onClick={() => void exportPdf()}>
+          {exportingPdf ? <span className="spinner" /> : <Download size={16} />}
+          {exportingPdf ? 'Готовим PDF…' : 'PDF · 1 страница'}
+        </button>
         <button className="button secondary" disabled={!markdown} onClick={() => download(markdown, 'md', 'text/markdown;charset=utf-8')}>
           <Download size={16} /> Скачать Markdown
         </button>
+        </div>
       </div>
+      {pdfError && <div className="notice danger" role="alert"><span>{pdfError}</span><button className="button secondary" disabled={exportingPdf} onClick={() => void exportPdf()}>Повторить PDF</button></div>}
       {error && <div className="notice danger" role="alert">{error}<button className="button secondary" onClick={() => setAttempt(attempt + 1)}>Повторить</button></div>}
       {!error && !markdown && <p className="loading-text" role="status"><span className="spinner" /> Готовим отчёт…</p>}
       {markdown && <article className="report-body">

@@ -1,8 +1,8 @@
 import { StrictMode, useEffect, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  ArrowDownToLine, ArrowLeft, ArrowRight, Building2, ChevronRight, CircleAlert,
-  Code2, FilePlus2, FileText, FlaskConical, GitBranch, Image, Microscope, ScanLine,
+  ArrowDownToLine, ArrowLeft, ArrowRight, Building2, Check, CircleAlert,
+  Code2, Download, FileText, FlaskConical, GitBranch, Image,
   ShieldCheck, ShoppingBag, Users, Upload, Workflow, Zap,
 } from 'lucide-react';
 import { api, download } from './api';
@@ -67,7 +67,6 @@ function App() {
   const invalidLength = count < 1000 || count > 5000;
   const demo = chosenExample?.text === source ? chosenExample : null;
   const live = typeof connection === 'object' && connection.llm_configured;
-  const currentSection = sections.find(section => section.id === view);
   const step = analysis?.steps.find(item => item.id === selected) ?? analysis?.steps[0];
 
   useEffect(() => {
@@ -160,70 +159,64 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <button type="button" className="brand" disabled={busy !== null} onClick={() => navigate('input')} aria-label="Axenix · к исходному тексту">
-          <span className="brand-mark"><Microscope size={21} strokeWidth={2.1} /></span>
-          <span><strong>Axenix</strong><small>Process Lens</small></span>
-        </button>
-        <nav className="side-nav" aria-label="Разделы">
-          <p>Рабочая область</p>
-          <button className={view === 'input' ? 'current' : ''} disabled={busy !== null} aria-current={view === 'input' ? 'page' : undefined} onClick={() => navigate('input')}>
-            <FilePlus2 size={18} /> <span>Исходный текст</span>
+      <a className="skip-link" href="#workspace">К рабочей области</a>
+      <header className="top-bar">
+        <div className="top-bar-inner">
+          <button type="button" className="brand" disabled={busy !== null} onClick={() => navigate('input')} aria-label="Феникс · новый анализ">
+            <img src="/favicon.svg" width="40" height="40" alt="" />
+            <strong>феникс</strong>
           </button>
-          <div className="nav-divider" />
-          <p>Результаты</p>
-          {sections.map(({ id, label, Icon }) => (
-            <button key={id} className={view === id ? 'current' : ''} disabled={!analysis || busy !== null} aria-current={view === id ? 'page' : undefined} onClick={() => navigate(id)}>
-              <Icon size={18} /> <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer"><ShieldCheck size={16} /> <span>Текст и результаты доступны в текущей вкладке.</span></div>
-      </aside>
-
-      <div className="main-shell">
-        <header className="top-bar">
-          <div className="breadcrumb"><span>Рабочая область</span><ChevronRight size={14} /><strong>{currentSection?.label ?? 'Исходный текст'}</strong></div>
+          <nav className="main-nav" aria-label="Рабочая область">
+            <button className={view === 'input' ? 'current' : ''} disabled={busy !== null} aria-current={view === 'input' ? 'page' : undefined} onClick={() => navigate('input')}>Новый анализ</button>
+            <button className={view !== 'input' ? 'current' : ''} disabled={!analysis || busy !== null} aria-current={view !== 'input' ? 'page' : undefined} onClick={() => navigate('diagram')}>Результаты</button>
+          </nav>
           <Status connection={connection} retry={() => setAttempt(attempt + 1)} />
-        </header>
-
+        </div>
+      </header>
+      <div className="main-shell">
         {view === 'input' && (
-          <main className="workspace intro">
+          <main id="workspace" className="workspace intro" tabIndex={-1}>
             <div className="page-heading">
-              <h1>Процесс под микроскопом</h1>
-              <p>Постройте схему процесса по записи совещания, найдите узкие места и идеи для автоматизации.</p>
+              <img className="phoenix-art" src="/phoenix.webp" srcSet="/phoenix-850.webp 850w, /phoenix.webp 1700w" sizes="(max-width: 600px) 430px, (max-width: 820px) 560px, (max-width: 1100px) 680px, 850px" alt="" width="1700" height="567" fetchPriority="high" />
+              <div className="heading-copy">
+                <h1>Новый взгляд<br />на ваш процесс.</h1>
+                <p>Из записи встречи — в понятную схему<br className="desktop-break" /> и план улучшений.</p>
+              </div>
             </div>
 
             <div className="input-grid">
-              <form className="card input-card" onSubmit={analyze}>
+              <form className="card input-card" onSubmit={analyze} aria-busy={busy === 'analyze'}>
                 <div className="input-card-head">
-                  <span className="card-icon"><FileText size={20} /></span>
-                  <div><h2>Исходный текст</h2><p>Стенограмма, интервью или описание процесса.</p></div>
+                  <h2>С чего начнём?</h2>
+                  <div className="input-methods" role="group" aria-label="Способ ввода">
+                    <button type="button" className="method-selected" disabled={busy !== null} onClick={() => document.getElementById('source')?.focus()}>Вставить текст</button>
+                    <button type="button" disabled={busy !== null} onClick={() => input.current?.click()}>
+                      {busy === 'import' ? <span className="spinner" /> : <Upload size={16} />}
+                      {busy === 'import' ? 'Импортируем…' : 'Загрузить файл'}
+                    </button>
+                  </div>
                 </div>
                 <div className="input-body">
-                  <div className="textarea-bar"><label htmlFor="source">Текст для анализа</label>
+                  <div className="textarea-bar"><label htmlFor="source">Запись встречи</label>
                     {demo && <span className="tag demo"><FlaskConical size={13} /> Демопример</span>}
                   </div>
                   <textarea id="source" className="source-input" value={source} disabled={busy !== null} aria-describedby="source-count source-length"
-                    placeholder="Например, менеджер принимает заявку, проверяет данные в CRM и передаёт её на согласование…"
+                    placeholder="Вставьте стенограмму, интервью или описание процесса…"
                     onChange={event => {
                       setSource(event.target.value);
                       setChosenExample(null);
                       setIssue('');
                     }} />
                   <div className="input-meta">
-                    <button type="button" className="button upload" disabled={busy !== null} onClick={() => input.current?.click()}>
-                      {busy === 'import' ? <span className="spinner" /> : <Upload size={15} />} {busy === 'import' ? 'Импортируем…' : 'Импорт файла'}
-                    </button>
                     <input type="file" ref={input} accept=".txt,.docx" hidden onChange={event => {
                       void importFile(event.target.files?.[0]);
                       event.target.value = '';
                     }} />
-                    <span className="file-formats">TXT, DOCX · до 2 МБ</span>
+                    <span id="source-length" className="length-help">От 1 000 до 5 000 символов</span>
                     <span id="source-count" className={count > 5000 ? 'count invalid' : 'count'}>{charNumber.format(count)} / 5 000</span>
+                    <span className="file-formats">TXT, DOCX · до 2 МБ</span>
                   </div>
                   {filename && <p className="imported"><FileText size={14} /> {filename}</p>}
-                  <p id="source-length" className="length-help">От 1 000 до 5 000 символов.</p>
                 </div>
 
                 {issue && <div className="notice danger input-notice" role="alert"><CircleAlert size={17} /> <span>{issue}</span></div>}
@@ -233,16 +226,17 @@ function App() {
                     : 'Для анализа своего текста подключите ИИ-модель.'}</p>
                   <button className="button primary analyze-button" type="submit"
                     disabled={busy !== null || invalidLength || connection === 'offline' || connection === 'checking'}>
-                    {busy === 'analyze' ? <span className="spinner" /> : <ScanLine size={17} />}
-                    {busy === 'analyze' ? 'Анализируем…' : 'Проанализировать'}
+                    {busy === 'analyze' && <span className="spinner" />}
+                    {busy === 'analyze' ? 'Анализируем…' : 'Разобрать процесс'}
+                    {busy !== 'analyze' && <ArrowRight size={18} />}
                   </button>
                 </div>
               </form>
 
-              <section className="examples" aria-label="Демопримеры">
+              <div className="intro-aside">
+              <section className="card examples" aria-label="Демопримеры">
                 <div className="examples-head">
-                  <span className="card-icon demo-icon"><FlaskConical size={20} /></span>
-                  <div><h2>Демопримеры</h2><p>Выберите готовый текст для анализа.</p></div>
+                  <h2>Попробуйте на примере</h2>
                 </div>
 
                 {examples.length === 0 && !examplesError && <p className="loading-text" role="status"><span className="spinner" /> Загружаем примеры…</p>}
@@ -254,19 +248,30 @@ function App() {
                   return (
                     <button type="button" className={`example-card ${demo?.id === example.id ? 'example-active' : ''}`} key={example.id}
                       disabled={busy !== null} aria-pressed={demo?.id === example.id} onClick={() => chooseExample(example)}>
-                      <span className={`example-icon ${theme}`}><Icon size={19} /></span>
-                      <span className="example-content"><span className="example-sector">{example.sector}</span><strong>{example.title}</strong><span>{example.description}</span></span>
+                      <span className={`example-icon ${theme}`}><Icon size={25} strokeWidth={1.5} /></span>
+                      <span className="example-content"><strong>{example.sector}</strong><span>{example.title}</span></span>
+                      {demo?.id === example.id ? <Check size={18} className="example-arrow" /> : <ArrowRight size={18} className="example-arrow" />}
                     </button>
                   );
                 })}
+                <a className="text-button defense-example" href="/examples/axenix-defense.txt" download><Download size={15} /> Скачать учебный текст</a>
+                <p className="example-help">Загрузите его файлом, чтобы попробовать живой анализ.</p>
               </section>
+              <section className="card outcome-preview" aria-label="Что получится">
+                <h2>Что получится</h2>
+                <div className="preview-flow" aria-label="Пример схемы: заявка, проверка, решение">
+                  <span>Заявка</span><ArrowRight size={18} aria-hidden="true" /><span className="preview-active">Проверка</span><ArrowRight size={18} aria-hidden="true" /><span>Решение</span>
+                </div>
+                <p>Схема, узкие места и гипотезы автоматизации — с опорой на исходный текст.</p>
+              </section>
+              </div>
             </div>
             {analysis && <button type="button" className="text-button previous-result" disabled={busy !== null} onClick={() => navigate('diagram')}>Открыть последний результат <ArrowRight size={15} /></button>}
           </main>
         )}
 
         {view !== 'input' && analysis && (
-          <main className="workspace result">
+          <main id="workspace" className="workspace result" tabIndex={-1}>
             <button className="text-button back-button" disabled={busy !== null} onClick={() => navigate('input')}><ArrowLeft size={15} /> К исходному тексту</button>
             <div className="result-heading">
               <div className="result-title">
@@ -315,6 +320,7 @@ function App() {
           </main>
         )}
       </div>
+      <footer className="app-footer"><span>Команда Феникс</span><span>Выводы проверяются по цитатам из текста</span></footer>
     </div>
   );
 }

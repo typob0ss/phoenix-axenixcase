@@ -340,10 +340,12 @@ def set_provider(monkeypatch, handler):
     monkeypatch.setenv("LLM_API_KEY", "secret-test-token")
     monkeypatch.setenv("LLM_BASE_URL", "https://example.invalid/v1/")
     monkeypatch.setenv("LLM_MODEL", "mock-model")
+    monkeypatch.delenv("LLM_REASONING_EFFORT", raising=False)
     monkeypatch.setattr(llm, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
 
 
-def test_configured_provider_analyzes_arbitrary_source(client, demo, monkeypatch):
+@pytest.mark.parametrize("reasoning_effort", [None, "none", "low"])
+def test_configured_provider_analyzes_arbitrary_source(client, demo, monkeypatch, reasoning_effort):
     source = demo["source_text"] + "\nЗамечание из рабочей стенограммы."
     generated = {key: demo[key] for key in (
         "title", "roles", "steps", "edges", "bottlenecks", "recommendations", "warnings"
@@ -354,12 +356,18 @@ def test_configured_provider_analyzes_arbitrary_source(client, demo, monkeypatch
         assert request.headers["Authorization"] == "Bearer secret-test-token"
         body = json.loads(request.content)
         assert body["model"] == "mock-model"
+        if reasoning_effort is None:
+            assert "reasoning_effort" not in body
+        else:
+            assert body["reasoning_effort"] == reasoning_effort
         assert json.loads(body["messages"][-1]["content"])["source_text"] == source
         return httpx.Response(200, json={"choices": [{"message": {
             "content": json.dumps(generated, ensure_ascii=False)
         }}]})
 
     set_provider(monkeypatch, handler)
+    if reasoning_effort is not None:
+        monkeypatch.setenv("LLM_REASONING_EFFORT", reasoning_effort)
     health = client.get("/api/health")
     assert health.json() == {"status": "ok", "llm_configured": True, "model": "mock-model"}
     assert "secret-test-token" not in health.text
